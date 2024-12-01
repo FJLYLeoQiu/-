@@ -1,0 +1,6 @@
+{
+    "admin": {
+        "password": "pbkdf2:sha256:260000$wMTTxtRMTIcKExBj$013c973d7b82dce46447d5fe72d4bb264859a52178d88881c42ebd98ace25c2e",
+        "name": "管理员"
+    }
+}

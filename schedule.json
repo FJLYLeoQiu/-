@@ -1,0 +1,14 @@
+{
+  "10:00": {
+    "music_file": "广播操.wav",
+    "workday_only": true
+  },
+  "15:00": {
+    "music_file": "广播操.wav",
+    "workday_only": true
+  },
+  "13:30": {
+    "music_file": "起床号.wav",
+    "workday_only": true
+  }
+}
