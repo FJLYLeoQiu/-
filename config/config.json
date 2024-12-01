@@ -1,0 +1,8 @@
+{
+    "week_schedule": {
+        "odd_week_rest": true,
+        "even_week_rest": false,
+        "saturday_work": true
+    },
+    "volume": 28
+}
