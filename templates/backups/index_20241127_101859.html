@@ -1,0 +1,2329 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>音乐播放控制系统</title>
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            background: #222436;
+            color: #c8d3f5;
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        .header {
+            margin-bottom: 1rem;
+        }
+
+        .content-area {
+            display: flex;
+            gap: 1rem;
+            position: relative;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .right-column {
+            width: 30%;
+            min-width: 300px;
+            position: sticky;
+            top: 1rem;
+            max-height: calc(100vh - 150px);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .log-container {
+            background: rgba(41, 46, 66, 0.5);
+            border: 1px solid rgba(82, 95, 127, 0.2);
+            border-radius: 12px;
+            padding: 1rem;
+            overflow-y: auto;
+            height: 100%;
+            max-height: inherit;
+        }
+
+        .top-row {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .top-row .card {
+            flex: 1;
+            margin: 0;
+        }
+
+        .card {
+            background: rgba(41, 46, 66, 0.5);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(82, 95, 127, 0.2);
+            border-radius: 8px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+            margin-bottom: 0.25rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(82, 95, 127, 0.3);
+            background: rgba(41, 46, 66, 0.6);
+        }
+
+        .card-header {
+            background: rgba(41, 46, 66, 0.3);
+            border-bottom: 1px solid rgba(82, 95, 127, 0.2);
+            padding: 0.35rem 0.5rem;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .card-header h5 {
+            color: #c8d3f5;
+            font-weight: 600;
+            margin: 0;
+            font-size: 0.95rem;
+            line-height: 1.2;
+        }
+
+        .card-body {
+            padding: 1rem;
+        }
+
+        /* 手动播放卡片样式 */
+        .card.manual-play .card-body {
+            padding: 0.5rem;
+        }
+
+        .card.manual-play .mb-3 {
+            margin-bottom: 0.5rem !important;
+        }
+
+        .card.manual-play .card-header {
+            padding: 0.5rem 1rem;
+        }
+
+        .btn {
+            border-radius: 12px;
+            font-weight: 500;
+            padding: 0.625rem 1.25rem;
+            transition: all 0.2s ease;
+            border: 1px solid rgba(82, 95, 127, 0.2);
+        }
+
+        .btn-primary {
+            background: #82aaff;
+            color: #1e2030;
+            border-color: #82aaff;
+        }
+
+        .btn-primary:hover {
+            background: #93b4ff;
+            border-color: #93b4ff;
+            color: #1e2030;
+        }
+
+        .btn-secondary {
+            background: #3e4155;
+            color: #c8d3f5;
+            border-color: #3e4155;
+        }
+
+        .btn-secondary:hover {
+            background: #494d64;
+            border-color: #494d64;
+            color: #c8d3f5;
+        }
+
+        .btn-danger {
+            background: #ff757f;
+            color: #1e2030;
+            border-color: #ff757f;
+        }
+
+        .btn-danger:hover {
+            background: #ff8993;
+            border-color: #ff8993;
+            color: #1e2030;
+        }
+
+        .form-control, .form-select {
+            background: rgba(41, 46, 66, 0.5);
+            border: 1px solid rgba(82, 95, 127, 0.2);
+            border-radius: 12px;
+            color: #c8d3f5;
+            padding: 0.625rem 1rem;
+        }
+
+        .form-control:focus, .form-select:focus {
+            background: rgba(41, 46, 66, 0.6);
+            border-color: #82aaff;
+            box-shadow: 0 0 0 2px rgba(130, 170, 255, 0.2);
+            color: #c8d3f5;
+        }
+
+        .form-control::placeholder {
+            color: #636b8a;
+        }
+
+        .form-select {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23c8d3f5' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+            background-position: right 0.75rem center;
+            background-repeat: no-repeat;
+            background-size: 16px 12px;
+        }
+
+        .form-select option {
+            background: #1e2030;
+            color: #c8d3f5;
+            padding: 8px;
+        }
+
+        .form-select:focus option {
+            background: #1e2030;
+            color: #c8d3f5;
+        }
+
+        .form-select:focus {
+            border-color: rgba(82, 95, 127, 0.2);
+            box-shadow: 0 0 0 2px rgba(130, 170, 255, 0.2);
+            background-color: rgba(41, 46, 66, 0.6);
+            color: #c8d3f5;
+        }
+
+        .form-check-input {
+            border-radius: 6px;
+            border: 1px solid rgba(82, 95, 127, 0.2);
+            background: rgba(41, 46, 66, 0.5);
+            cursor: pointer;
+        }
+
+        .form-check-input:checked {
+            background-color: rgba(41, 46, 66, 0.6);
+            border-color: rgba(82, 95, 127, 0.3);
+        }
+
+        .form-check-label {
+            color: #c8d3f5;
+        }
+
+        .status-bar {
+            background: rgba(41, 46, 66, 0.5);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(82, 95, 127, 0.2);
+            border-radius: 12px;
+            padding: 0.5rem 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: nowrap;
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            min-width: 0;
+            overflow: hidden;
+            color: #c8d3f5;
+            transition: all 0.3s;
+        }
+
+        /* 工作日状态样式 */
+        #isWorkday, #isSaturday {
+            padding: 2px 8px;
+            border-radius: 4px;
+            background: rgba(130, 170, 255, 0.15);
+        }
+
+        #isWorkday.workday, #isSaturday.workday {
+            color: #82aaff;
+        }
+
+        #isWorkday.holiday, #isSaturday.holiday {
+            color: #c3e88d;
+            background: rgba(195, 232, 141, 0.15);
+        }
+
+        /* 移动端状态栏样式保持不变 */
+        #mobileStatus.workday {
+            background-color: rgba(130, 170, 255, 0.15);
+            color: #82aaff;
+        }
+
+        #mobileStatus.holiday {
+            background-color: rgba(195, 232, 141, 0.15);
+            color: #c3e88d;
+        }
+
+        .schedule-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.875rem;
+            margin-top: 1rem;
+        }
+
+        .schedule-item {
+            background: rgba(41, 46, 66, 0.5);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(82, 95, 127, 0.2);
+            border-radius: 12px;
+            padding: 0.75rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        .schedule-item:hover {
+            background: rgba(41, 46, 66, 0.6);
+            border-color: rgba(82, 95, 127, 0.3);
+        }
+
+        .schedule-time {
+            color: #82aaff;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .schedule-name {
+            color: #c8d3f5;
+            font-size: 0.95rem;
+        }
+
+        .schedule-workday {
+            font-size: 0.875rem;
+            color: #636b8a;
+            font-weight: 500;
+        }
+
+        .page-title {
+            color: #c8d3f5;
+            font-weight: 700;
+            font-size: 1.75rem;
+            letter-spacing: -0.02em;
+            margin: 0;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .log-container {
+            background: rgba(41, 46, 66, 0.5);
+            border: 1px solid rgba(82, 95, 127, 0.2);
+            border-radius: 12px;
+            color: #c8d3f5;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            width: 300px;
+        }
+
+        .log-content {
+            flex: 1;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.9rem;
+            color: #c8d3f5;
+            padding-right: 0.5rem;
+            min-height: 0;
+        }
+
+        .log-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .log-content::-webkit-scrollbar-track {
+            background: rgba(41, 46, 66, 0.3);
+            border-radius: 4px;
+        }
+
+        .log-content::-webkit-scrollbar-thumb {
+            background: rgba(130, 170, 255, 0.3);
+            border-radius: 4px;
+        }
+
+        .log-content::-webkit-scrollbar-thumb:hover {
+            background: rgba(130, 170, 255, 0.5);
+        }
+
+        .log-entry {
+            padding: 0.5rem;
+            border-bottom: 1px solid rgba(82, 95, 127, 0.2);
+            font-size: 0.875rem;
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+
+        .alert {
+            border-radius: 10px;
+            border: none;
+            padding: 1rem 1.25rem;
+            margin-bottom: 1rem;
+            font-weight: 500;
+        }
+
+        .alert-success {
+            background: rgba(130, 170, 255, 0.15);
+            color: #82aaff;
+            border: 1px solid rgba(130, 170, 255, 0.2);
+        }
+
+        .alert-danger {
+            background: rgba(255, 117, 127, 0.15);
+            color: #ff757f;
+            border: 1px solid rgba(255, 117, 127, 0.2);
+        }
+
+        .table {
+            margin-bottom: 0;
+        }
+
+        .table th {
+            color: #636b8a;
+            border-bottom-color: rgba(82, 95, 127, 0.2);
+        }
+
+        .table td {
+            color: #c8d3f5;
+            border-bottom-color: rgba(82, 95, 127, 0.2);
+        }
+
+        .task-info-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: stretch;
+            gap: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .task-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            padding: 1rem;
+            background: rgba(41, 46, 66, 0.5);
+            border: 1px solid rgba(82, 95, 127, 0.2);
+            border-radius: 10px;
+        }
+
+        .task-info-label {
+            font-size: 0.875rem;
+            color: #636b8a;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .task-info-value {
+            font-weight: 500;
+            color: #c8d3f5;
+            line-height: 1.5;
+        }
+
+        /* 移动端任务概览样式 */
+        .task-overview-mobile {
+            display: none;
+            background: rgba(41, 46, 66, 0.5);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(82, 95, 127, 0.2);
+            border-radius: 12px;
+            padding: 8px;
+            margin: 8px 0;
+            font-size: 14px;
+        }
+
+        .task-overview-mobile .task-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 4px 0;
+            color: #c8d3f5;
+        }
+
+        .task-overview-mobile .task-row + .task-row {
+            border-top: 1px solid rgba(82, 95, 127, 0.2);
+            margin-top: 4px;
+            padding-top: 8px;
+        }
+
+        @media (max-width: 767px) {
+            .task-overview {
+                display: none;
+            }
+            .task-overview-mobile {
+                display: block;
+            }
+        }
+
+        /* 移动端内容区域样式 */
+        .content-mobile {
+            display: none;
+            flex-direction: column;
+            gap: 16px;
+            padding: 16px;
+            margin-top: 16px;
+        }
+
+        .task-overview-mobile {
+            background: rgba(41, 46, 66, 0.5);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(82, 95, 127, 0.2);
+            border-radius: 12px;
+            padding: 12px;
+        }
+
+        .task-overview-mobile .task-row {
+            padding: 8px;
+            color: #c8d3f5;
+        }
+
+        .task-overview-mobile .task-row + .task-row {
+            border-top: 1px solid rgba(82, 95, 127, 0.2);
+            margin-top: 8px;
+            padding-top: 12px;
+        }
+
+        .task-overview-mobile .task-info-label {
+            font-size: 14px;
+            color: #636b8a;
+            margin-bottom: 4px;
+        }
+
+        .task-overview-mobile .task-info-value {
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .music-control-mobile {
+            background: rgba(41, 46, 66, 0.5);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(82, 95, 127, 0.2);
+            border-radius: 12px;
+            padding: 12px;
+        }
+
+        @media (max-width: 767px) {
+            .content-area {
+                display: none;
+            }
+            .content-mobile {
+                display: flex;
+            }
+        }
+
+        /* 自定义滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(41, 46, 66, 0.2);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: rgba(130, 170, 255, 0.3);
+            border-radius: 4px;
+            transition: background 0.2s ease;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(130, 170, 255, 0.5);
+        }
+        
+        /* Firefox滚动条样式 */
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(130, 170, 255, 0.3) rgba(41, 46, 66, 0.2);
+        }
+        
+        .card.schedule-card {
+            margin-bottom: 1rem;
+        }
+        
+        /* 音量控制样式 */
+        .volume-control {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        .volume-control label {
+            margin-bottom: 10px;
+        }
+        .volume-control .volume-slider-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            max-width: 300px;
+        }
+        .volume-control .btn-volume {
+            min-width: 40px;
+            height: 32px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+        .volume-control .form-range {
+            width: 200px;
+            margin: 0 10px;
+        }
+
+        /* 响应式布局 - 仅移动端 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0.5rem;
+            }
+
+            /* 状态栏样式 */
+            .status-bar {
+                display: none;  /* 隐藏PC端状态栏 */
+            }
+
+            /* 移动端状态栏 */
+            .status-bar-mobile {
+                display: flex !important;
+                flex-direction: column;
+                gap: 0.5rem;
+                width: 100%;
+                margin-bottom: 1rem;
+            }
+
+            /* 第一行：日期 */
+            .status-row.date {
+                font-size: 1.2em;
+                font-weight: bold;
+                justify-content: center;
+                margin-bottom: 0.5rem;
+                text-align: center;
+            }
+
+            /* 第二行：其他状态 */
+            .status-row.info {
+                display: flex;
+                flex-wrap: wrap;  /* 允许内容换行 */
+                gap: 1rem;  /* 增加间距 */
+                justify-content: center;
+                align-items: center;
+                padding: 0 0.5rem;  /* 添加水平内边距 */
+                font-size: 0.9em;  /* 稍微减小字体大小 */
+            }
+
+            .status-row.info > * {
+                white-space: nowrap;  /* 防止文本换行 */
+                margin: 0.25rem 0;  /* 添加垂直间距 */
+            }
+
+            /* 状态徽章样式 */
+            .status-badge {
+                padding: 0.25rem 0.75rem;
+                border-radius: 1rem;
+            }
+
+            /* 按钮组样式 */
+            .status-buttons {
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+                width: 100%;
+                margin-top: 0.5rem;
+            }
+
+            .status-buttons .btn {
+                width: 100%;
+                margin: 0;
+            }
+
+            /* 其他移动端样式保持不变 */
+            .content-area {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .main-content, .right-column {
+                width: 100%;
+            }
+
+            .right-column {
+                position: static;
+                max-height: none;
+            }
+
+            .log-container {
+                height: 300px;
+                max-height: none;
+                width: 100%;
+                margin: 0;
+                box-sizing: border-box;
+            }
+
+            .top-row {
+                flex-direction: column;
+                gap: 0.5rem;
+                margin-bottom: 0.5rem;
+            }
+
+            .top-row .card {
+                width: 100%;
+                margin: 0;
+            }
+        }
+
+        /* PC端隐藏移动端状态栏 */
+        .status-bar-mobile {
+            display: none;
+        }
+
+        /* 移动端状态显示样式 */
+        #mobileStatus {
+            padding: 8px;
+            text-align: center;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+        #mobileStatus.workday {
+            background-color: rgba(130, 170, 255, 0.15);
+            color: #82aaff;
+        }
+        #mobileStatus.holiday {
+            background-color: rgba(195, 232, 141, 0.15);
+            color: #c3e88d;
+        }
+        @media (min-width: 768px) {
+            #mobileStatus {
+                display: none;
+            }
+        }
+        
+        #mobileStatus {
+            padding: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            background: rgba(41, 46, 66, 0.5);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(82, 95, 127, 0.2);
+        }
+        #mobileStatus .date-row,
+        #mobileStatus .status-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            color: #c8d3f5;
+        }
+        #mobileStatus.workday {
+            background-color: rgba(130, 170, 255, 0.15);
+        }
+        #mobileStatus.holiday {
+            background-color: rgba(195, 232, 141, 0.15);
+        }
+        @media (min-width: 768px) {
+            #mobileStatus {
+                display: none;
+            }
+        }
+
+        /* 移动端音乐列表样式 */
+        .music-list {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 0.25rem;
+            padding: 0.5rem;
+        }
+
+        .music-item {
+            padding: 0.5rem;
+            margin-bottom: 0.25rem;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .music-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .music-item.selected {
+            background-color: #e9ecef;
+            font-weight: bold;
+        }
+
+        /* 移动端任务显示样式 */
+        .task-list-mobile {
+            margin: 1rem 0;
+        }
+
+        .task-item-mobile {
+            background-color: #f8f9fa;
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .task-title-mobile {
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            color: #495057;
+        }
+
+        .task-content-mobile {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .task-text-mobile {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding: 0.25rem 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .task-text-mobile:last-child {
+            border-bottom: none;
+        }
+
+        /* 移动端任务显示样式 */
+        .task-info-mobile {
+            margin: 1rem 0;
+        }
+
+        .task-row-mobile {
+            background-color: #f8f9fa;
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .task-info-label-mobile {
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            color: #495057;
+        }
+
+        .task-info-value-mobile {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .task-text-mobile {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding: 0.25rem 0;
+            border-bottom: 1px solid #e9ecef;
+            line-height: 1.5;
+        }
+
+        .task-text-mobile:last-child {
+            border-bottom: none;
+        }
+
+        /* 深色主题变量 */
+        :root {
+            --dark-bg: #1a1a1a;
+            --dark-surface: #2d2d2d;
+            --dark-border: #404040;
+            --dark-hover: #3d3d3d;
+            --dark-text: #e0e0e0;
+            --dark-text-secondary: #a0a0a0;
+            --dark-primary: #4a9eff;
+            --dark-primary-hover: #3d8ae6;
+            --dark-success: #2ea043;
+            --dark-warning: #d29922;
+            --dark-info: #388bfd;
+            --dark-shadow: rgba(0, 0, 0, 0.2);
+        }
+
+        /* 移动端音乐列表样式 */
+        .music-list {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid var(--dark-border);
+            border-radius: 0.5rem;
+            background-color: var(--dark-surface);
+            box-shadow: 0 2px 8px var(--dark-shadow);
+        }
+
+        .music-item {
+            padding: 0.75rem 1rem;
+            margin: 0.25rem;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            background-color: var(--dark-bg);
+            border: 1px solid var(--dark-border);
+            color: var(--dark-text);
+        }
+
+        .music-item:hover {
+            background-color: var(--dark-hover);
+            border-color: var(--dark-primary);
+        }
+
+        .music-item.selected {
+            background-color: var(--dark-primary);
+            color: #ffffff;
+            border-color: var(--dark-primary);
+            font-weight: 500;
+            box-shadow: 0 0 0 1px var(--dark-primary);
+        }
+
+        /* 移动端任务显示样式 */
+        .task-info-mobile {
+            margin: 1rem 0;
+        }
+
+        .task-row-mobile {
+            background-color: var(--dark-surface);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border: 1px solid var(--dark-border);
+            box-shadow: 0 2px 8px var(--dark-shadow);
+            color: var(--dark-text);
+        }
+
+        .task-info-label-mobile {
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            color: var(--dark-primary);
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .task-info-label-mobile::before {
+            content: '';
+            display: inline-block;
+            width: 0.5rem;
+            height: 0.5rem;
+            background-color: var(--dark-primary);
+            border-radius: 50%;
+        }
+
+        .task-info-value-mobile {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            background-color: var(--dark-bg);
+            border-radius: 0.375rem;
+            padding: 0.75rem;
+        }
+
+        .task-text-mobile {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding: 0.75rem;
+            border-radius: 0.375rem;
+            background-color: var(--dark-surface);
+            border: 1px solid var(--dark-border);
+            line-height: 1.5;
+            font-size: 0.95rem;
+            color: var(--dark-text);
+        }
+
+        .task-text-mobile:last-child {
+            margin-bottom: 0;
+        }
+
+        /* 状态颜色 */
+        .task-text-mobile.status-success {
+            border-left: 3px solid var(--dark-success);
+        }
+
+        .task-text-mobile.status-warning {
+            border-left: 3px solid var(--dark-warning);
+        }
+
+        .task-text-mobile.status-info {
+            border-left: 3px solid var(--dark-info);
+        }
+
+        .task-text-mobile.status-secondary {
+            border-left: 3px solid var(--dark-text-secondary);
+        }
+
+        /* 滚动条样式 */
+        .music-list::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .music-list::-webkit-scrollbar-track {
+            background: var(--dark-bg);
+            border-radius: 4px;
+        }
+
+        .music-list::-webkit-scrollbar-thumb {
+            background: var(--dark-border);
+            border-radius: 4px;
+        }
+
+        .music-list::-webkit-scrollbar-thumb:hover {
+            background: var(--dark-hover);
+        }
+
+        /* 任务时间和状态样式 */
+        .task-time, .task-status {
+            color: var(--dark-primary);
+            font-weight: 500;
+        }
+
+        .task-music {
+            color: var(--dark-text);
+        }
+
+        .task-workday {
+            color: var(--dark-text-secondary);
+            font-size: 0.9em;
+        }
+
+        .task-remaining {
+            color: var(--dark-info);
+            font-size: 0.9em;
+        }
+
+        /* 移动端状态栏样式 */
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            line-height: 1.4;
+            margin: 0 0.25rem;
+        }
+
+        .workday-badge {
+            background-color: var(--dark-primary);
+            color: #ffffff;
+            box-shadow: 0 1px 3px var(--dark-shadow);
+        }
+
+        .saturday-badge {
+            background-color: var(--dark-warning);
+            color: #ffffff;
+            box-shadow: 0 1px 3px var(--dark-shadow);
+        }
+
+        /* 移动端下次任务卡片样式 */
+        .task-card-mobile {
+            background-color: var(--dark-surface);
+            border: 1px solid var(--dark-border);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 8px var(--dark-shadow);
+        }
+
+        .task-card-content {
+            display: grid;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            background-color: var(--dark-bg);
+            border-radius: 0.375rem;
+        }
+
+        .task-card-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--dark-text);
+        }
+
+        .task-card-label {
+            color: var(--dark-text-secondary);
+            font-size: 0.9em;
+            min-width: 4rem;
+        }
+
+        .task-card-value {
+            color: var(--dark-text);
+            flex: 1;
+        }
+
+        .task-card.status-success {
+            border-left: 3px solid var(--dark-success);
+        }
+
+        .task-card.status-warning {
+            border-left: 3px solid var(--dark-warning);
+        }
+
+        .task-card.status-info {
+            border-left: 3px solid var(--dark-info);
+        }
+
+        .task-card.status-secondary {
+            border-left: 3px solid var(--dark-text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="page-title">音乐播放控制系统</h1>
+            <div class="status-bar">
+                <div class="status-item" id="currentDateTime"></div>
+                <div class="status-item" id="weekDay"></div>
+                <div class="status-item" id="isWorkday"></div>
+                <div class="status-item" id="weekType"></div>
+                <div class="status-item" id="isSaturday"></div>
+                <div class="status-item" id="workStatus"></div>
+            </div>
+            <div class="status-bar-mobile">
+                <div id="mobileStatus">
+                    <div class="date-row"></div>
+                    <div class="status-row"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="content-area">
+            <!-- 左侧主要内容 -->
+            <div class="main-content">
+                <!-- 顶部一行：手动播放和系统维护 -->
+                <div class="top-row">
+                    <!-- 手动播放 -->
+                    <div class="card manual-play">
+                        <div class="card-header">
+                            <h5 class="mb-0"><strong>手动播放</strong></h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <select class="form-select" id="musicSelect">
+                                    <!-- 音乐列表将通过 JavaScript 动态加载 -->
+                                </select>
+                            </div>
+                            <div class="text-center">
+                                <button onclick="playMusic()" class="btn btn-primary me-2">播放</button>
+                                <button onclick="stopMusic()" class="btn btn-secondary">停止</button>
+                            </div>
+                            <!-- 音量控制 -->
+                            <div class="volume-control mt-3">
+                                <div class="mb-2">
+                                    <label class="form-label">音量控制: <span id="volumeValue">80%</span></label>
+                                </div>
+                                <div class="volume-slider-container">
+                                    <button onclick="setVolume('-')" class="btn btn-outline-secondary btn-volume">-</button>
+                                    <input type="range" id="volumeSlider" class="form-range" min="0" max="100" value="80">
+                                    <button onclick="setVolume('+')" class="btn btn-outline-secondary btn-volume">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 系统维护 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><strong>系统维护</strong></h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <!-- 大小周设置 -->
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <h6>大小周设置</h6>
+                                        <div class="form-check mb-2">
+                                            <input type="checkbox" id="oddWeekRest" class="form-check-input" checked>
+                                            <label class="form-check-label" for="oddWeekRest">奇数周双休</label>
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            <input type="checkbox" id="evenWeekRest" class="form-check-input">
+                                            <label class="form-check-label" for="evenWeekRest">偶数周双休</label>
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            <input type="checkbox" id="saturdayWork" class="form-check-input" checked>
+                                            <label class="form-check-label" for="saturdayWork">单休周六上班</label>
+                                        </div>
+                                        <button onclick="saveWeekSchedule()" class="btn btn-primary btn-sm">保存设置</button>
+                                    </div>
+                                </div>
+
+                                <!-- 节假日数据版本 -->
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <h6>节假日数据</h6>
+                                        <div class="mb-2">
+                                            <strong>当前版本：</strong>
+                                            <span id="calendarVersion">加载中...</span>
+                                        </div>
+                                        <div class="mb-2">
+                                            <strong>数据年份范围：</strong>
+                                            <span id="yearRange">加载中...</span>
+                                        </div>
+                                        <button onclick="updateCalendar()" class="btn btn-info btn-sm">更新节假日数据</button>
+                                        <div id="updateStatus" class="mt-2"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 定时设置 -->
+                <div class="card schedule-card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><strong>定时设置</strong></h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="scheduleForm" class="mb-3">
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <input type="time" id="scheduleTime" class="form-control" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <select id="scheduleMusicSelect" class="form-select" required>
+                                        <option value="">选择音乐文件...</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-check">
+                                        <input type="checkbox" id="workdayOnly" class="form-check-input">
+                                        <label class="form-check-label" for="workdayOnly">仅工作日播放</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <button type="submit" class="btn btn-primary w-100">添加</button>
+                                </div>
+                            </div>
+                        </form>
+                        <div id="scheduleList" class="schedule-list"></div>
+                    </div>
+                </div>
+                
+                <!-- 任务概览 -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><strong>任务概览</strong></h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="task-info-container">
+                            <div class="task-info">
+                                <div class="task-info-label">今日任务</div>
+                                <div id="taskOverview" class="task-info-value">加载中...</div>
+                            </div>
+                            <div class="task-info">
+                                <div class="task-info-label">下次任务</div>
+                                <div id="nextTaskInfo" class="task-info-value">加载中...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- 右侧系统日志 -->
+            <div class="right-column">
+                <div class="log-container">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><strong>运行日志</strong></h5>
+                        <button class="btn btn-sm btn-outline-danger" onclick="clearLogs()">清除日志</button>
+                    </div>
+                    <div class="log-content" id="logContent"></div>
+                </div>
+            </div>
+        </div>
+        <div class="content-mobile">
+            <!-- 移动端音乐控制 -->
+            <div class="music-control-mobile">
+                <div class="form-group mb-3">
+                    <div class="music-list" id="musicListMobile">
+                        <!-- 音乐列表将通过JavaScript动态填充 -->
+                    </div>
+                </div>
+                <div class="text-center">
+                    <button id="playButtonMobile" class="btn btn-primary me-2">播放</button>
+                    <button id="stopButtonMobile" class="btn btn-secondary">停止</button>
+                </div>
+                <!-- 音量控制 -->
+                <div class="volume-control mt-3">
+                    <div class="mb-2">
+                        <label class="form-label">音量控制: <span id="volumeValueMobile">80%</span></label>
+                    </div>
+                    <div class="volume-slider-container">
+                        <button onclick="setVolume('-')" class="btn btn-outline-secondary btn-volume">-</button>
+                        <input type="range" id="volumeSliderMobile" class="form-range" min="0" max="100" value="80">
+                        <button onclick="setVolume('+')" class="btn btn-outline-secondary btn-volume">+</button>
+                    </div>
+                </div>
+            </div>
+            <!-- 移动端任务概览 -->
+            <div class="task-info-mobile">
+                <div class="task-row-mobile">
+                    <div class="task-info-label-mobile">今日任务</div>
+                    <div id="taskOverviewMobile" class="task-info-value-mobile">
+                        加载中...
+                    </div>
+                </div>
+                <div class="task-row-mobile">
+                    <div class="task-info-label-mobile">下次任务</div>
+                    <div id="nextTaskInfoMobile" class="task-info-value-mobile">
+                        加载中...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // 加载音乐列表
+        async function loadMusicList() {
+            try {
+                const response = await fetch('/api/music');  // 修正API端点
+                const musicFiles = await response.json();
+                
+                // PC端音乐选择
+                const musicSelect = document.getElementById('musicSelect');
+                const scheduleMusicSelect = document.getElementById('scheduleMusicSelect');
+                
+                // 清空并重置PC端选项
+                musicSelect.innerHTML = '<option value="">选择音乐文件</option>';
+                scheduleMusicSelect.innerHTML = '<option value="">选择音乐文件</option>';
+                
+                // 移动端音乐列表
+                const musicListMobile = document.getElementById('musicListMobile');
+                musicListMobile.innerHTML = '';
+                
+                // 添加音乐选项
+                musicFiles.forEach(file => {
+                    // PC端下拉列表
+                    const option = document.createElement('option');
+                    option.value = file;
+                    option.textContent = file;
+                    musicSelect.appendChild(option);
+                    
+                    // 定时任务音乐选择
+                    const scheduleOption = option.cloneNode(true);
+                    scheduleMusicSelect.appendChild(scheduleOption);
+                    
+                    // 移动端列表项
+                    const musicItem = document.createElement('div');
+                    musicItem.className = 'music-item';
+                    musicItem.dataset.value = file;
+                    musicItem.textContent = file;
+                    musicItem.addEventListener('click', function() {
+                        // 移除其他项的选中状态
+                        document.querySelectorAll('.music-item').forEach(item => {
+                            item.classList.remove('selected');
+                        });
+                        // 添加当前项的选中状态
+                        this.classList.add('selected');
+                        // 更新选中的音乐
+                        selectedMusic = file;
+                    });
+                    musicListMobile.appendChild(musicItem);
+                });
+            } catch (error) {
+                console.error('加载音乐列表失败:', error);
+            }
+        }
+        
+        // 加载系统日志
+        async function loadLogs() {
+            try {
+                const response = await fetch('/api/logs');
+                if (!response.ok) {
+                    throw new Error('获取日志失败');
+                }
+                const data = await response.json();
+                const logContent = document.getElementById('logContent');
+                
+                if (data.logs && Array.isArray(data.logs) && data.logs.length > 0) {
+                    // 将日志数组转换为HTML元素
+                    logContent.innerHTML = data.logs.map(log => 
+                        `<div class="log-entry">${log}</div>`
+                    ).join('');
+                    // 自动滚动到底部
+                    logContent.scrollTop = logContent.scrollHeight;
+                } else if (data.error) {
+                    logContent.innerHTML = `<div class="text-danger">错误: ${data.error}</div>`;
+                } else {
+                    logContent.innerHTML = '<div class="text-muted">暂无日志</div>';
+                }
+            } catch (error) {
+                console.error('Error loading logs:', error);
+                document.getElementById('logContent').innerHTML = 
+                    '<div class="text-danger">加载日志失败</div>';
+            }
+        }
+        
+        // 启动日志刷新
+        function startLogRefresh() {
+            loadLogs();  // 立即加载一次
+            window.logRefreshTimer = setInterval(loadLogs, 5000);  // 每5秒刷新一次
+        }
+
+        // 加载定时列表
+        async function loadSchedule() {
+            const response = await fetch('/api/schedule');
+            const schedule = await response.json();
+            const scheduleList = document.getElementById('scheduleList');
+            
+            scheduleList.innerHTML = '';
+            for (const [time, task] of Object.entries(schedule)) {
+                const div = document.createElement('div');
+                div.className = 'schedule-item';
+                div.innerHTML = `
+                    <div class="schedule-info">
+                        <span class="schedule-time">${time}</span>
+                        <span class="schedule-name">${task.music_file}</span>
+                        ${task.workday_only ? '<span class="schedule-workday">(仅工作日)</span>' : ''}
+                    </div>
+                    <button onclick="deleteSchedule('${time}')" class="btn btn-sm btn-danger">删除</button>
+                `;
+                scheduleList.appendChild(div);
+            }
+        }
+
+        // 播放音乐
+        async function playMusic(musicFile) {
+            try {
+                const selectedMusic = musicFile || document.getElementById('musicSelect').value;
+                if (!selectedMusic) {
+                    alert('请先选择音乐文件');
+                    return;
+                }
+
+                const response = await fetch('/api/play', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ music_file: selectedMusic })
+                });
+
+                if (response.ok) {
+                    console.log('开始播放音乐:', selectedMusic);
+                    // 更新PC端和移动端的播放状态
+                    updatePlayStatus(true);
+                } else {
+                    const data = await response.json();
+                    throw new Error(data.error || '播放失败');
+                }
+            } catch (error) {
+                console.error('Error playing music:', error);
+                alert(error.message || '播放失败，请检查网络连接');
+            }
+        }
+
+        // 停止播放
+        async function stopMusic() {
+            try {
+                const response = await fetch('/api/stop', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    console.log('停止播放音乐');
+                    // 更新PC端和移动端的播放状态
+                    updatePlayStatus(false);
+                } else {
+                    const data = await response.json();
+                    throw new Error(data.error || '停止失败');
+                }
+            } catch (error) {
+                console.error('Error stopping music:', error);
+                alert(error.message || '停止失败，请检查网络连接');
+            }
+        }
+
+        // 更新播放状态
+        function updatePlayStatus(isPlaying) {
+            // 更新PC端按钮状态
+            const playButton = document.getElementById('playButton');
+            const stopButton = document.getElementById('stopButton');
+            if (playButton) playButton.disabled = isPlaying;
+            if (stopButton) stopButton.disabled = !isPlaying;
+
+            // 更新移动端按钮状态
+            const playButtonMobile = document.getElementById('playButtonMobile');
+            const stopButtonMobile = document.getElementById('stopButtonMobile');
+            if (playButtonMobile) playButtonMobile.disabled = isPlaying;
+            if (stopButtonMobile) stopButtonMobile.disabled = !isPlaying;
+        }
+
+        // 删除定时
+        async function deleteSchedule(time) {
+            try {
+                const response = await fetch(`/api/schedule/${encodeURIComponent(time)}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    await loadSchedule();  // 重新加载定时列表
+                    await Promise.all([
+                        loadTaskOverview(),
+                        loadNextTask()
+                    ]);
+                } else {
+                    const data = await response.json();
+                    alert('删除失败: ' + (data.message || '未知错误'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('删除失败');
+            }
+        }
+
+        // 更新节假日数据
+        async function updateCalendar() {
+            const statusDiv = document.getElementById('updateStatus');
+            statusDiv.innerHTML = '<div class="text-info">正在更新...</div>';
+            
+            try {
+                const response = await fetch('/api/update-calendar', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'}
+                });
+                
+                const data = await response.json();
+                if (data.status === 'success') {
+                    statusDiv.innerHTML = `<div class="text-success">${data.message}</div>`;
+                    // 更新成功后刷新版本信息
+                    loadCalendarVersion();
+                } else {
+                    statusDiv.innerHTML = `<div class="text-danger">更新失败：${data.message}</div>`;
+                    console.error('Update failed:', data.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                statusDiv.innerHTML = '<div class="text-danger">更新失败，请检查网络连接</div>';
+            }
+        }
+
+        // 加载日历版本信息
+        async function loadCalendarVersion() {
+            try {
+                const response = await fetch('/api/calendar-version');
+                const data = await response.json();
+                if (data.version) {
+                    document.getElementById('calendarVersion').textContent = data.version;
+                }
+            } catch (error) {
+                console.error('Error loading calendar version:', error);
+                document.getElementById('calendarVersion').textContent = '获取失败';
+            }
+        }
+
+        // 加载最新年份
+        async function loadLatestYear() {
+            try {
+                const response = await fetch('/api/calendar-version');
+                const data = await response.json();
+                if (data.year_range) {
+                    document.getElementById('yearRange').textContent = data.year_range;
+                }
+            } catch (error) {
+                console.error('Error loading latest year:', error);
+                document.getElementById('yearRange').textContent = '获取失败';
+            }
+        }
+
+        // 加载周设置
+        async function loadWeekSchedule() {
+            try {
+                const response = await fetch('/api/week-schedule');
+                const data = await response.json();
+                document.getElementById('oddWeekRest').checked = data.odd_week_rest;
+                document.getElementById('evenWeekRest').checked = data.even_week_rest;
+                document.getElementById('saturdayWork').checked = data.saturday_work;
+            } catch (error) {
+                console.error('Error loading week schedule:', error);
+            }
+        }
+
+        // 保存周设置
+        async function saveWeekSchedule() {
+            try {
+                const data = {
+                    odd_week_rest: document.getElementById('oddWeekRest').checked,
+                    even_week_rest: document.getElementById('evenWeekRest').checked,
+                    saturday_work: document.getElementById('saturdayWork').checked
+                };
+                
+                const response = await fetch('/api/week-schedule', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.error || '保存失败');
+                }
+                
+                if (result.status === 'success') {
+                    await Promise.all([
+                        loadTaskOverview(),
+                        loadNextTask()
+                    ]);
+                } else {
+                    throw new Error(result.error || '保存失败');
+                }
+            } catch (error) {
+                console.error('Error saving week schedule:', error);
+                alert('保存失败: ' + error.message);
+            }
+        }
+
+        // 添加定时
+        document.getElementById('scheduleForm').onsubmit = async function(event) {
+            event.preventDefault();
+            
+            const time = document.getElementById('scheduleTime').value;
+            const musicFile = document.getElementById('scheduleMusicSelect').value;
+            const workdayOnly = document.getElementById('workdayOnly').checked;
+            
+            try {
+                const response = await fetch('/api/schedule', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        time: time,
+                        music_file: musicFile,
+                        workday_only: workdayOnly
+                    })
+                });
+
+                const data = await response.json();
+                if (data.status === 'success') {
+                    await loadSchedule();
+                    await Promise.all([
+                        loadTaskOverview(),
+                        loadNextTask()
+                    ]);
+                    this.reset();
+                } else {
+                    alert('添加失败: ' + (data.error || '未知错误'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('添加失败，请检查网络连接');
+            }
+        };
+
+        // 同步移动端任务信息
+        function syncMobileTaskInfo() {
+            // 同步今日任务
+            const taskOverview = document.getElementById('taskOverview');
+            const taskOverviewMobile = document.getElementById('taskOverviewMobile');
+            if (taskOverview && taskOverviewMobile) {
+                taskOverviewMobile.innerHTML = taskOverview.innerHTML;
+                taskOverviewMobile.style.color = taskOverview.style.color;
+            }
+
+            // 同步下次任务
+            const nextTaskInfo = document.getElementById('nextTaskInfo');
+            const nextTaskInfoMobile = document.getElementById('nextTaskInfoMobile');
+            if (nextTaskInfo && nextTaskInfoMobile) {
+                nextTaskInfoMobile.innerHTML = nextTaskInfo.innerHTML;
+                nextTaskInfoMobile.style.color = nextTaskInfo.style.color;
+            }
+        }
+
+        // 加载任务概览
+        async function loadTaskOverview() {
+            try {
+                const response = await fetch('/api/task-overview');
+                const data = await response.json();
+
+                // 更新当天任务
+                const todayTasksDiv = document.getElementById('taskOverview');
+                const todayTasksMobile = document.getElementById('taskOverviewMobile');
+
+                if (!todayTasksDiv) {
+                    console.error('taskOverview element not found');
+                    return;
+                }
+
+                if (response.ok && data && !data.error) {
+                    if (data.today_tasks && data.today_tasks.length > 0) {
+                        // PC端显示
+                        todayTasksDiv.innerHTML = data.today_tasks.map(task => 
+                            `<div>${task.time} | ${task.music_file}${task.workday_only ? ' | 仅工作日' : ''}</div>`
+                        ).join('');
+                        todayTasksDiv.style.color = '#28a745';  // 绿色
+
+                        // 移动端显示
+                        if (todayTasksMobile) {
+                            todayTasksMobile.innerHTML = data.today_tasks.map(task => 
+                                `<div class="task-text-mobile">${task.time} | ${task.music_file}${task.workday_only ? ' | 仅工作日' : ''}</div>`
+                            ).join('');
+                        }
+                    } else {
+                        const message = '今天没有待执行的任务';
+                        todayTasksDiv.textContent = message;
+                        todayTasksDiv.style.color = '#6c757d';  // 灰色
+                        if (todayTasksMobile) {
+                            todayTasksMobile.innerHTML = `<div class="task-text-mobile">${message}</div>`;
+                        }
+                    }
+                } else {
+                    const message = '加载任务信息失败';
+                    todayTasksDiv.textContent = message;
+                    todayTasksDiv.style.color = '#dc3545';  // 红色
+                    if (todayTasksMobile) {
+                        todayTasksMobile.innerHTML = `<div class="task-text-mobile">${message}</div>`;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading task overview:', error);
+                const message = '加载任务信息失败';
+                const todayTasksDiv = document.getElementById('taskOverview');
+                const todayTasksMobile = document.getElementById('taskOverviewMobile');
+                
+                if (todayTasksDiv) {
+                    todayTasksDiv.textContent = message;
+                    todayTasksDiv.style.color = '#dc3545';  // 红色
+                }
+                if (todayTasksMobile) {
+                    todayTasksMobile.innerHTML = `<div class="task-text-mobile">${message}</div>`;
+                }
+            }
+        }
+
+        // 加载下一个任务信息
+        async function loadNextTask() {
+            try {
+                const response = await fetch('/api/next-task');
+                const data = await response.json();
+
+                const nextTaskInfo = document.getElementById('nextTaskInfo');
+                const nextTaskInfoMobile = document.getElementById('nextTaskInfoMobile');
+
+                if (!nextTaskInfo) {
+                    console.error('nextTaskInfo element not found');
+                    return;
+                }
+
+                if (response.ok && data && !data.error) {
+                    // 根据状态设置样式类
+                    let statusClass;
+                    let statusColor;
+                    switch (data.status) {
+                        case 'imminent':
+                            statusClass = 'status-warning';
+                            statusColor = '#ffc107';
+                            break;
+                        case 'today':
+                            statusClass = 'status-success';
+                            statusColor = '#28a745';
+                            break;
+                        case 'tomorrow':
+                            statusClass = 'status-info';
+                            statusColor = '#17a2b8';
+                            break;
+                        default:
+                            statusClass = 'status-secondary';
+                            statusColor = '#6c757d';
+                    }
+
+                    // PC端显示
+                    const taskInfo = [
+                        data.time,
+                        data.music_file.replace('.wav', ''),
+                        data.workday_only ? '（仅工作日）' : '',
+                        data.status_text,
+                        data.time_remaining
+                    ].filter(Boolean).join(' | ');
+                    
+                    nextTaskInfo.textContent = taskInfo;
+                    nextTaskInfo.style.color = statusColor;
+
+                    // 移动端显示
+                    if (nextTaskInfoMobile) {
+                        nextTaskInfoMobile.innerHTML = `
+                            <div class="task-card-mobile ${statusClass}">
+                                <div class="task-card-content">
+                                    <div class="task-card-row">
+                                        <span class="task-card-label">时间：</span>
+                                        <span class="task-card-value">${data.time}</span>
+                                    </div>
+                                    <div class="task-card-row">
+                                        <span class="task-card-label">音乐：</span>
+                                        <span class="task-card-value">${data.music_file.replace('.wav', '')}</span>
+                                    </div>
+                                    ${data.workday_only ? `
+                                    <div class="task-card-row">
+                                        <span class="task-card-label">限制：</span>
+                                        <span class="task-card-value">仅工作日</span>
+                                    </div>
+                                    ` : ''}
+                                    <div class="task-card-row">
+                                        <span class="task-card-label">状态：</span>
+                                        <span class="task-card-value">${data.status_text}</span>
+                                    </div>
+                                    <div class="task-card-row">
+                                        <span class="task-card-label">剩余：</span>
+                                        <span class="task-card-value">${data.time_remaining}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                } else {
+                    const message = '没有待执行的任务';
+                    nextTaskInfo.textContent = message;
+                    nextTaskInfo.style.color = '#6c757d';
+                    if (nextTaskInfoMobile) {
+                        nextTaskInfoMobile.innerHTML = `
+                            <div class="task-card-mobile status-secondary">
+                                <div class="task-card-content">
+                                    <div class="task-card-row">
+                                        <span class="task-card-value">${message}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading next task:', error);
+                const message = '加载任务信息失败';
+                
+                if (nextTaskInfo) {
+                    nextTaskInfo.textContent = message;
+                    nextTaskInfo.style.color = '#dc3545';
+                }
+                if (nextTaskInfoMobile) {
+                    nextTaskInfoMobile.innerHTML = `
+                        <div class="task-card-mobile">
+                            <div class="task-card-content">
+                                <div class="task-card-row">
+                                    <span class="task-card-value" style="color: #dc3545;">${message}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+        }
+        
+        // 定期刷新任务概览（每分钟）
+        function startTaskOverviewRefresh() {
+            loadTaskOverview();  // 立即加载一次
+            setInterval(loadTaskOverview, 60000);  // 每分钟刷新一次
+        }
+
+        // 定期刷新下一个任务信息（每分钟）
+        function startNextTaskRefresh() {
+            loadNextTask();  // 立即加载一次
+            setInterval(loadNextTask, 60000);  // 每分钟刷新一次
+        }
+
+        // 加载工作状态
+        async function loadWorkStatus() {
+            try {
+                const response = await fetch('/api/workday');
+                const data = await response.json();
+                
+                if (response.ok && data) {
+                    // 更新日期和星期
+                    document.getElementById('currentDateTime').textContent = data.date;
+                    document.getElementById('workStatus').textContent = data.weekday;
+                    
+                    // 更新工作状态
+                    const isWorkdayElement = document.getElementById('isWorkday');
+                    isWorkdayElement.textContent = data.is_workday ? '工作日' : '休息日';
+                    if (data.is_workday) {
+                        isWorkdayElement.classList.add('workday');
+                        isWorkdayElement.classList.remove('holiday');
+                    } else {
+                        isWorkdayElement.classList.add('holiday');
+                        isWorkdayElement.classList.remove('workday');
+                    }
+                    
+                    // 更新本周状态
+                    const weekStatus = document.getElementById('weekStatus');
+                    weekStatus.textContent = data.is_single_rest ? '单周' : '双周';
+                    
+                    // 更新周六状态
+                    const saturdayStatus = document.getElementById('saturdayStatus');
+                    saturdayStatus.textContent = data.is_saturday_work ? '周六上班' : '周六休息';
+                    
+                    // 同步移动端显示
+                    syncStatusDisplay();
+                } else {
+                    console.error('Failed to load work status:', data.error);
+                }
+            } catch (error) {
+                console.error('Error loading work status:', error);
+            }
+        }
+
+        // 定期刷新工作状态（每分钟）
+        function startWorkStatusRefresh() {
+            loadWorkStatus();  // 立即加载一次
+            setInterval(loadWorkStatus, 60000);  // 每分钟刷新一次
+        }
+
+        // 同步PC端和移动端状态显示
+        function syncStatusDisplay() {
+            // 从PC端获取状态信息
+            const dateTime = document.getElementById('currentDateTime').textContent;
+            const weekDay = document.getElementById('workStatus').textContent;
+            const weekType = document.getElementById('weekType').textContent;
+            const isWorkday = document.getElementById('isWorkday').textContent;
+            const isSaturday = document.getElementById('isSaturday').textContent;
+            
+            // 更新移动端状态栏
+            const mobileStatus = document.getElementById('mobileStatus');
+            if (mobileStatus) {
+                // 创建或获取日期行
+                let dateRow = mobileStatus.querySelector('.date-row');
+                if (!dateRow) {
+                    dateRow = document.createElement('div');
+                    dateRow.className = 'date-row';
+                    mobileStatus.appendChild(dateRow);
+                }
+                dateRow.textContent = `${dateTime} ${weekDay}`;
+
+                // 创建或获取状态行
+                let statusRow = mobileStatus.querySelector('.status-row');
+                if (!statusRow) {
+                    statusRow = document.createElement('div');
+                    statusRow.className = 'status-row';
+                    mobileStatus.appendChild(statusRow);
+                }
+                statusRow.textContent = `${isWorkday} ${weekType} ${isSaturday}`;
+                
+                // 根据工作日状态设置样式
+                if (isWorkday === '工作日') {
+                    mobileStatus.classList.add('workday');
+                    mobileStatus.classList.remove('holiday');
+                } else if (isWorkday === '休息日') {
+                    mobileStatus.classList.add('holiday');
+                    mobileStatus.classList.remove('workday');
+                } else {
+                    mobileStatus.classList.remove('workday', 'holiday');
+                }
+            }
+        }
+
+        // 在状态更新后调用同步函数
+        function updateDateTime() {
+            const now = new Date();
+            const dateOptions = { 
+                year: 'numeric', 
+                month: '2-digit', 
+                day: '2-digit'
+            };
+            
+            // 更新日期（仅年月日）
+            document.getElementById('currentDateTime').textContent = now.toLocaleString('zh-CN', dateOptions);
+            
+            // 更新星期（完整格式）
+            const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
+            document.getElementById('weekDay').textContent = '星期' + weekDays[now.getDay()];
+            
+            // 获取当前周数
+            const startDate = new Date('2024-01-01'); // 使用2024年第一周作为参考
+            const weekNumber = Math.ceil((now - startDate) / (7 * 24 * 60 * 60 * 1000));
+            const isOddWeek = weekNumber % 2 === 1;
+            
+            // 获取节假日信息和周设置
+            Promise.all([
+                fetch('/api/holiday-info').then(response => response.json()),
+                fetch('/api/week-schedule').then(response => response.json())
+            ])
+            .then(([holidayInfo, weekSchedule]) => {
+                const weekday = now.getDay(); // 0是周日，6是周六
+                
+                // 判断是否单休周
+                const oddWeekRest = weekSchedule.odd_week_rest;
+                const evenWeekRest = weekSchedule.even_week_rest;
+                const saturdayWork = weekSchedule.saturday_work;
+                const isSingleRest = (isOddWeek && !oddWeekRest) || (!isOddWeek && !evenWeekRest);
+                
+                // 更新单双周显示
+                document.getElementById('weekType').textContent = isOddWeek ? '单周' : '双周';
+                
+                // 判断是否工作日
+                let isWorkday = holidayInfo.is_workday;
+                
+                // 如果不是法定节假日，再判断是否因为大小周设置而需要上班
+                if (!holidayInfo.is_holiday && !holidayInfo.is_in_lieu) {
+                    if (weekday === 6) { // 周六
+                        isWorkday = isSingleRest && saturdayWork;
+                    } else if (weekday !== 0) { // 周一到周五
+                        isWorkday = true;
+                    }
+                }
+                
+                // 更新工作日状态
+                const isWorkdayElement = document.getElementById('isWorkday');
+                isWorkdayElement.textContent = isWorkday ? '工作日' : '休息日';
+                if (isWorkday) {
+                    isWorkdayElement.classList.add('workday');
+                    isWorkdayElement.classList.remove('holiday');
+                } else {
+                    isWorkdayElement.classList.add('holiday');
+                    isWorkdayElement.classList.remove('workday');
+                }
+                
+                // 更新周六状态
+                const isSaturdayElement = document.getElementById('isSaturday');
+                const saturdayText = (isSingleRest && saturdayWork) ? '周六上班' : '周六休息';
+                isSaturdayElement.textContent = saturdayText;
+                if (isSingleRest && saturdayWork) {
+                    isSaturdayElement.classList.add('workday');
+                    isSaturdayElement.classList.remove('holiday');
+                } else {
+                    isSaturdayElement.classList.add('holiday');
+                    isSaturdayElement.classList.remove('workday');
+                }
+                
+                // 同步移动端显示
+                syncStatusDisplay();
+            })
+            .catch(error => {
+                console.error('Error fetching status:', error);
+                document.getElementById('isWorkday').textContent = '状态未知';
+                document.getElementById('weekType').textContent = '状态未知';
+                document.getElementById('isSaturday').textContent = '状态未知';
+            });
+            
+            // 同步移动端显示
+            syncStatusDisplay();
+        }
+
+        // 定期更新日期时间（每秒）
+        setInterval(updateDateTime, 1000);
+
+        // 清除日志
+        async function clearLogs() {
+            try {
+                const response = await fetch('/api/clear-logs', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'}
+                });
+                if (!response.ok) {
+                    throw new Error('清除日志失败');
+                }
+                // 立即清空日志显示
+                document.getElementById('logContent').innerHTML = '';
+                // 停止当前的日志刷新定时器
+                if (window.logRefreshTimer) {
+                    clearInterval(window.logRefreshTimer);
+                }
+                // 等待一小段时间后再重新开始刷新
+                setTimeout(() => {
+                    loadLogs();  // 立即加载一次
+                    window.logRefreshTimer = setInterval(loadLogs, 5000);  // 重新开始定时刷新
+                }, 1000);
+            } catch (error) {
+                console.error('Error clearing logs:', error);
+                alert('清除日志失败，请检查网络连接');
+            }
+        }
+
+        // 同步移动端状态显示
+        function syncStatusDisplay() {
+            // 从PC端获取状态信息
+            const dateTime = document.getElementById('currentDateTime').textContent;
+            const weekDay = document.getElementById('workStatus').textContent;
+            const weekType = document.getElementById('weekType').textContent;
+            const isWorkday = document.getElementById('isWorkday').textContent;
+            const isSaturday = document.getElementById('isSaturday').textContent;
+            
+            // 更新移动端状态栏
+            const mobileStatus = document.getElementById('mobileStatus');
+            if (mobileStatus) {
+                // 创建或获取日期行
+                let dateRow = mobileStatus.querySelector('.date-row');
+                if (!dateRow) {
+                    dateRow = document.createElement('div');
+                    dateRow.className = 'date-row';
+                    mobileStatus.appendChild(dateRow);
+                }
+                dateRow.textContent = `${dateTime} ${weekDay}`;
+
+                // 创建或获取状态行
+                let statusRow = mobileStatus.querySelector('.status-row');
+                if (!statusRow) {
+                    statusRow = document.createElement('div');
+                    statusRow.className = 'status-row';
+                    mobileStatus.appendChild(statusRow);
+                }
+                statusRow.textContent = `${isWorkday} ${weekType} ${isSaturday}`;
+                
+                // 根据工作日状态设置样式
+                if (isWorkday === '工作日') {
+                    mobileStatus.classList.add('workday');
+                    mobileStatus.classList.remove('holiday');
+                } else if (isWorkday === '休息日') {
+                    mobileStatus.classList.add('holiday');
+                    mobileStatus.classList.remove('workday');
+                } else {
+                    mobileStatus.classList.remove('workday', 'holiday');
+                }
+            }
+        }
+
+        // 添加移动端状态栏样式
+        const style = document.createElement('style');
+        style.textContent = `
+            #mobileStatus {
+                padding: 8px;
+                font-size: 14px;
+                transition: all 0.3s;
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+                background: rgba(41, 46, 66, 0.5);
+                backdrop-filter: blur(20px);
+                -webkit-backdrop-filter: blur(20px);
+                border: 1px solid rgba(82, 95, 127, 0.2);
+            }
+            #mobileStatus .date-row,
+            #mobileStatus .status-row {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                gap: 8px;
+                color: #c8d3f5;
+            }
+            #mobileStatus.workday {
+                background-color: rgba(130, 170, 255, 0.15);
+            }
+            #mobileStatus.holiday {
+                background-color: rgba(195, 232, 141, 0.15);
+            }
+            @media (min-width: 768px) {
+                #mobileStatus {
+                    display: none;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // 初始化移动端音乐控制
+        function initMobileControls() {
+            // 播放按钮事件
+            const playButtonMobile = document.getElementById('playButtonMobile');
+            if (playButtonMobile) {
+                playButtonMobile.addEventListener('click', function() {
+                    if (selectedMusic) {
+                        playMusic(selectedMusic);
+                    } else {
+                        alert('请先选择音乐文件');
+                    }
+                });
+            }
+
+            // 停止按钮事件
+            const stopButtonMobile = document.getElementById('stopButtonMobile');
+            if (stopButtonMobile) {
+                stopButtonMobile.addEventListener('click', stopMusic);
+            }
+
+            // 音量控制事件
+            const volumeSliderMobile = document.getElementById('volumeSliderMobile');
+            if (volumeSliderMobile) {
+                volumeSliderMobile.addEventListener('input', function() {
+                    const volume = this.value;
+                    setVolume(volume);
+                });
+            }
+
+            // 音量加减按钮事件
+            const volumeButtons = document.querySelectorAll('.btn-volume');
+            volumeButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const action = this.textContent;  // '+' 或 '-'
+                    setVolume(action);
+                });
+            });
+        }
+
+        // 初始化
+        window.addEventListener('DOMContentLoaded', function() {
+            // 首先加载核心功能
+            loadMusicList();
+            loadLogs();
+            startLogRefresh();
+            loadWorkStatus();
+            startWorkStatusRefresh();
+            loadTaskOverview();
+            startTaskOverviewRefresh();
+            loadNextTask();
+            startNextTaskRefresh();
+            loadSchedule();
+            loadCalendarVersion();  // 加载日历版本
+            loadLatestYear();  // 加载年份范围
+
+            // 初始化移动端控制
+            initMobileControls();
+        });
+
+        // 全局变量
+        let currentVolume = 50;  // 默认音量50%
+        let selectedMusic = '';  // 选中的音乐文件
+
+        // 音量控制函数
+        async function setVolume(action) {
+            try {
+                let volume;
+                if (action === '+') {
+                    volume = Math.min(100, currentVolume + 10);
+                } else if (action === '-') {
+                    volume = Math.max(0, currentVolume - 10);
+                } else {
+                    volume = parseInt(action);
+                }
+
+                const response = await fetch('/set_volume', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ volume: volume })
+                });
+
+                if (!response.ok) {
+                    throw new Error('设置音量失败');
+                }
+
+                const data = await response.json();
+                if (data.status === 'success') {
+                    currentVolume = volume;
+                    // 同步更新PC端和移动端的音量显示
+                    updateVolumeDisplay(volume);
+                } else {
+                    throw new Error(data.message || '设置音量失败');
+                }
+            } catch (error) {
+                console.error('Error setting volume:', error);
+                alert(error.message || '设置音量失败，请检查网络连接');
+            }
+        }
+
+        // 更新音量显示
+        function updateVolumeDisplay(volume) {
+            try {
+                // 更新PC端显示
+                const volumeValue = document.getElementById('volumeValue');
+                const volumeSlider = document.getElementById('volumeSlider');
+                if (volumeValue) volumeValue.textContent = volume + '%';
+                if (volumeSlider) volumeSlider.value = volume;
+
+                // 更新移动端显示
+                const volumeValueMobile = document.getElementById('volumeValueMobile');
+                const volumeSliderMobile = document.getElementById('volumeSliderMobile');
+                if (volumeValueMobile) volumeValueMobile.textContent = volume + '%';
+                if (volumeSliderMobile) volumeSliderMobile.value = volume;
+            } catch (error) {
+                console.error('Error updating volume display:', error);
+            }
+        }
+
+        // 获取当前音量
+        async function getCurrentVolume() {
+            try {
+                const response = await fetch('/get_volume');
+                if (!response.ok) {
+                    throw new Error('获取音量失败');
+                }
+
+                const data = await response.json();
+                if (data.status === 'success' && data.volume !== undefined) {
+                    currentVolume = data.volume;
+                    updateVolumeDisplay(data.volume);
+                } else {
+                    throw new Error(data.message || '获取音量失败');
+                }
+            } catch (error) {
+                console.error('Error getting volume:', error);
+                // 设置默认音量为50%
+                currentVolume = 50;
+                updateVolumeDisplay(currentVolume);
+            }
+        }
+
+        // 监听PC端滑块变化
+        document.getElementById('volumeSlider').addEventListener('input', function(e) {
+            const volume = parseInt(e.target.value);
+            setVolume(volume);
+        });
+
+        // 监听移动端滑块变化
+        document.getElementById('volumeSliderMobile').addEventListener('input', function(e) {
+            const volume = parseInt(e.target.value);
+            setVolume(volume);
+        });
+
+        // 初始化
+        window.addEventListener('DOMContentLoaded', function() {
+            // 首先加载核心功能
+            loadMusicList();
+            loadLogs();
+            startLogRefresh();
+            loadWorkStatus();
+            startWorkStatusRefresh();
+            loadTaskOverview();
+            startTaskOverviewRefresh();
+            loadNextTask();
+            startNextTaskRefresh();
+            loadSchedule();
+            loadCalendarVersion();  // 加载日历版本
+            loadLatestYear();  // 加载年份范围
+            getCurrentVolume();  // 获取并同步当前音量设置
+
+            // 初始化移动端控制
+            initMobileControls();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,3 @@
+pip install -U chinesecalendar
+
+https://pypi.org/project/chinesecalendar
